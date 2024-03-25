@@ -3,8 +3,6 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router } from '@angular/router';
 import { NgIf } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
-import { catchError, tap } from 'rxjs/operators';
-import { of } from 'rxjs';
 import { UsuarioService } from '../service/usuario-service';
 
 @Component({
@@ -37,37 +35,25 @@ export class LoginComponent {
   
     const email = this.loginForm.get('email')?.value;
     const senha = this.loginForm.get('senha')?.value;
-  
+   
     this.usuarioService.login(email, senha)
-      .pipe(
-        tap(usuario => { 
-          if (usuario && usuario.perfil && usuario.id && usuario.token) {
-            this.usuarioService.setToken(usuario.token);
-            this.usuarioService.setId(usuario.id.toString());
-            if(usuario.perfil=="A"){
-              this.router.navigate(['resposta']);
-            }else if(usuario.perfil=="C"){
-              this.router.navigate(['chamado']);
-            }else {
-              this.router.navigate(['']);
-            }
-
+    .subscribe({
+      next: (res) => {
+        if (res && res.perfil && res.id && res.token) {
+          this.usuarioService.setToken(res.token);
+          this.usuarioService.setId(res.id.toString());
+          if(res.perfil=="A"){
+            this.router.navigate(['resposta']);
+          }else if(res.perfil=="C"){
+            this.router.navigate(['chamado']);
+          }else {
+            this.router.navigate(['']);
           }
-        }),
-        catchError(error => {
-          if (error.status === 401) {
-            console.error('Login failed (401): Invalid credentials');
-            alert('Login ou Senha invalida!');
-            this.loginForm.reset();
-            return of(error); 
-          } else {
-            console.error('Login error:', error);
-            alert('Ocorreu um erro inesperado, tente mais tarde');
-            this.loginForm.reset();
-            return of(error); 
-          }
-        })
-      )
-      .subscribe();
+        }
+      },
+      error: (e) => {
+        alert(e.error.message);
       }
+    });
+  }
 }
